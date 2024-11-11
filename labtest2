@@ -1,0 +1,124 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from pymongo import MongoClient
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.metrics import recall_score, f1_score, classification_report
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+
+schema = {
+    "no:": "S.No.",
+    "application number:":"Application Number",
+    "application type:" :"Application Type",
+    "name": "Institute Name",
+    "add1:":"Inst Address",
+    "add2:":"Inst Address 2",
+    "city:":"CITY",
+    "district:":"District",
+    "pin:":"Pincode",
+    "minority:":"Minority Institute",
+    "women:":"Womens institute",
+    "state": "State",
+    "region": "Region",
+    "inst type:":"Inst Type",
+    "program": "Program",
+    "course:":"Course",
+    "level:":"Level",
+    "spl:":"Specialization",
+    "intake:":"Intake",
+    "approval_status": "ApprovalStatus"
+}
+
+df = pd.read_csv("C:\Users\22103334\Desktop\New Institutes.csv")
+client = MongoClient('localhost', 27017)
+db = client['institute_db']
+collection = db['institutes']
+ 
+data_dict = df.to_dict("records")
+collection.insert_many(data_dict)
+
+#q3
+df.isnull().sum()
+df['minority'].fillna('Unknown', inplace=True)
+df['women'].fillna('To be checked', inplace=True)
+#q4
+pipeline = [
+    {"$group": {"s.no": "$state", "count": {"$sum": 1}}},
+    {"$sort": {"count": -1}}
+]
+
+result = collection.aggregate(pipeline)
+for item in result:
+    print(f"State: {item['s.no.']}, Applications: {item['count']}")
+    
+#q6
+region_program_counts = df.groupby(['region', 'program']).size().unstack()
+region_program_counts.plot(kind='bar', stacked=True)
+plt.title("region and program")
+plt.xlabel("region")
+plt.ylabel("number of applications")
+plt.show() 
+  
+#q5
+categorical_columns = ['application number:', 'application type:', 'name', 'add1:', 'add2:', 'city:', 
+                       'district:', 'minority:', 'women:', 'state', 'region', 'inst type:', 'program', 
+                       'course:', 'level:', 'spl:', 'approval_status']
+
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('cat', OneHotEncoder(), categorical_columns)
+    
+
+repare features and target
+X = df.drop('approval_status', axis=1)  
+y = df['approval_status']
+le = LabelEncoder()
+y = le.fit_transform(y
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42
+nb_model = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('classifier', GaussianNB())
+])
+
+svm_model = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('classifier', SVC(kernel='linear', probability=True)
+nb_model.fit(X_train, y_train)
+svm_model.fit(X_train, y_train
+nb_preds = nb_model.predict(X_test)
+svm_preds = svm_model.predict(X_test)
+nb_recall = recall_score(y_test, nb_preds)
+svm_recall = recall_score(y_test, svm_preds)
+
+nb_f1 = f1_score(y_test, nb_preds)
+svm_f1 = f1_score(y_test, svm_preds)
+
+print("Naive Bayes - Recall:", nb_recall)
+print("Naive Bayes - F1 Score:", nb_f1)
+print("SVM - Recall:", svm_recall)
+print("SVM - F1 Score:", svm_f1)
+
+
+print("\nNaive Bayes Classification Report:")
+print(classification_report(y_test, nb_preds))
+
+print("\nSVM Classification Report:")
+print(classification_report(y_test, svm_preds))
+
+
+
+
+
+
+
+
+
+
+
+
